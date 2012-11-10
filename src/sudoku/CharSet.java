@@ -52,6 +52,7 @@ public class CharSet {
      * Constructs an empty CharSet.
      */
     public CharSet() {
+        
     }
 
     /**
