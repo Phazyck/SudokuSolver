@@ -24,7 +24,7 @@ public class CharSet {
         CharSet used = CharSet.union(CharSet.union(horizontal, vertical), block);
         CharSet free = CharSet.complement(new CharSet("123456789"), used);
         System.out.println(used);
-        System.out.println(free);
+        System.out.println(free);        
     }
     private final CharNode root = new CharNode();
 
@@ -124,6 +124,20 @@ public class CharSet {
      */
     public int size() {
         return root.size();
+    }
+    
+    /**
+     * Does this sequence contain that char?
+     * @param that That char.
+     * @return The answer.
+     */
+    public boolean contains(char that) {
+        for(char c: toString().toCharArray()) {
+            if(c == that) {
+                return true;
+            }
+        }        
+        return false;
     }
 
     @Override

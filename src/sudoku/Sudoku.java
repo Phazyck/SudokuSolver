@@ -5,7 +5,8 @@ import java.io.*;
 public class Sudoku {
 
     private final char[][] state = new char[9][9];
-    private final char empty = '0';
+    private final char empty = '.';
+    private final char[] values = "123456789".toCharArray();
     public final int GOAL = 81;
 
     /**
@@ -24,31 +25,31 @@ public class Sudoku {
         }
     }
 
-    /**
-     * Print the current layout of the Sudoku.
-     */
-    public void print() {
-        System.out.println("+-------+-------+-------+");
+    @Override
+    public String toString() {
+        String string = "";
         for (int segX = 0; segX < 3; segX++) {
             for (int subSegX = 0; subSegX < 3; subSegX++) {
-                System.out.print("|");
                 for (int segY = 0; segY < 3; segY++) {
                     for (int subSegY = 0; subSegY < 3; subSegY++) {
                         char x = state[segX * 3 + subSegX][segY * 3 + subSegY];
                         String s = x == 0 ? " " : "" + x;
-                        System.out.print(s);
-                        if (subSegY < 2) {
-                            System.out.print("  ");
-                        }
+                        string += s + " ";
                     }
 
-                    System.out.print("|");
+                    if (segY < 2) {
+                        string += "|";
+                    }
 
                 }
-                System.out.println();
+                string += "\n";
             }
-            System.out.println("+-------+-------+-------+");
+            if (segX < 2) {
+                string += "------+------+------\n";
+            }
         }
+
+        return string;
     }
 
     /**
@@ -70,27 +71,41 @@ public class Sudoku {
     public char[][] getState() {
         return state;
     }
-    
+
     public int progress() {
         int progress = 0;
-        for(char[] arr : state) {
+        for (char[] arr : state) {
             CharSet line = new CharSet(arr);
-            line.remove(empty);            
+            line.remove(empty);
             progress += line.size();
         }
         return progress;
     }
-    
+
     public boolean finished() {
         return progress() == GOAL;
     }
 
+    public int solve() {
+        int found = 0;
+        int last;
+        do {
+            last = found;
+
+            found += fieldSolve() + charSolve();            
+        } while (found != last);
+
+        return found;
+
+    }
+
     /**
-     * Attempt to solve the Sudoku in a simple way.
+     * Attempt to solve the Sudoku by filling fields where, at first glance,
+     * there is only one possible character to insert.
      *
      * @return the number of new entries.
      */
-    public int simpleSolve() {
+    public int fieldSolve() {
         int found = 0;
         int last;
         do {
@@ -98,7 +113,7 @@ public class Sudoku {
 
             for (int i = 0; i < 9; i++) {
                 for (int j = 0; j < 9; j++) {
-                    CharSet chars = getFreeChars(i, j);
+                    CharSet chars = getFieldChars(i, j);
                     if (chars.size() == 1) {
                         found++;
                         fill(chars.peek(), i, j);
@@ -111,12 +126,23 @@ public class Sudoku {
     }
 
     /**
-     * Attempt to solve the Sudoku in a more sophisticated way.
+     * Attempt to solve the Sudoku by filling a character into the only field
+     * inside a row, column or block, where it can be.
      *
      * @return the number of new entries.
      */
-    public int complexSolve() {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public int charSolve() {
+        int found = 0;
+        int last;
+        do {
+            last = found;
+
+            for (char c : values) {
+                found += fillChar(c);
+            }
+        } while (found != last);
+
+        return found;
     }
 
     /**
@@ -126,23 +152,12 @@ public class Sudoku {
      * @param col The column of the field.
      * @return A CharSet containing the available chars.
      */
-    public CharSet getFreeChars(int row, int col) {
-        if (state[row][col] != empty) {
+    public CharSet getFieldChars(int row, int col) {
+        if (state[row][col] == empty) {
+            return CharSet.intersection(CharSet.intersection(getRowChars(row), getColChars(col)), getBlockChars(row, col));
+        } else {
             return new CharSet();
         }
-
-        return CharSet.complement(new CharSet("123456789"), getUsedChars(row, col));
-    }
-
-    /**
-     * Get a set of the chars that can't be placed in the given field.
-     *
-     * @param row The row of the field.
-     * @param col The column of the field.
-     * @return A CharSet containing the used chars.
-     */
-    private CharSet getUsedChars(int row, int col) {
-        return CharSet.union(CharSet.union(getHorizontalChars(row), getVerticalChars(col)), getBlockChars(row, col));
     }
 
     /**
@@ -151,12 +166,11 @@ public class Sudoku {
      * @param row The row.
      * @return A CharSet containing the used chars.
      */
-    private CharSet getHorizontalChars(int row) {
-        CharSet chars = new CharSet();
+    private CharSet getRowChars(int row) {
+        CharSet chars = new CharSet(values);
         for (int col = 0; col < 9; col++) {
-            chars.add(state[row][col]);
+            chars.remove(state[row][col]);
         }
-        chars.remove(empty);
         //System.out.println("[" + row + "] : " + chars);
         return chars;
     }
@@ -167,12 +181,11 @@ public class Sudoku {
      * @param col The column.
      * @return A CharSet containing the used chars.
      */
-    private CharSet getVerticalChars(int col) {
-        CharSet chars = new CharSet();
+    private CharSet getColChars(int col) {
+        CharSet chars = new CharSet(values);
         for (int row = 0; row < 9; row++) {
-            chars.add(state[row][col]);
+            chars.remove(state[row][col]);
         }
-        chars.remove(empty);
         //System.out.println("[" + col + "] : " + chars);
         return chars;
     }
@@ -186,14 +199,102 @@ public class Sudoku {
      * @return A CharSet containing the used chars.
      */
     private CharSet getBlockChars(int row, int col) {
-        CharSet chars = new CharSet();
+        CharSet chars = new CharSet(values);
         for (int a = 0; a < 3; a++) {
             for (int b = 0; b < 3; b++) {
-                chars.add(state[(row / 3) * 3 + a][(col / 3) * 3 + b]);
+                chars.remove(state[(row / 3) * 3 + a][(col / 3) * 3 + b]);
             }
         }
-        chars.remove(empty);
         //System.out.println("[" + row + "," + col + "] : " + chars);
         return chars;
+    }
+
+    private int fillChar(char c) {
+        int fills = 0;
+
+        for (int i = 0; i < 9; i++) {
+            if (fillCol(i, c)) {
+                fills++;
+            }
+            if (fillRow(i, c)) {
+                fills++;
+            }
+            if (i % 3 == 0) {
+                if (fillBlock(i, i, c)) {
+                    fills++;
+                }
+
+            }
+        }
+
+        return fills;
+    }
+
+    private boolean fillCol(int col, char c) {
+        int hitRow = -1;
+        for (int row = 0; row < 9; row++) {
+            if (getFieldChars(row, col).contains(c)) {
+                if (hitRow == -1) {
+                    hitRow = row;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        if (hitRow == -1) {
+            return false;
+        }
+
+        fill(c, hitRow, col);
+        return true;
+    }
+
+    private boolean fillRow(int row, char c) {
+        int hitCol = -1;
+        for (int col = 0; col < 9; col++) {
+            if (getFieldChars(row, col).contains(c)) {
+                if (hitCol == -1) {
+                    hitCol = col;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        if (hitCol == -1) {
+            return false;
+        }
+
+        fill(c, row, hitCol);
+        return true;
+    }
+
+    private boolean fillBlock(int row, int col, char c) {
+        int blockRow = (row / 3) * 3;
+        int blockCol = (col / 3) * 3;
+
+        int hitRow = -1;
+        int hitCol = -1;
+
+        for (int dRow = 0; dRow < 3; dRow++) {
+            for (int dCol = 0; dCol < 3; dCol++) {
+                if (getFieldChars(blockRow + dRow, blockCol + dCol).contains(c)) {
+                    if (hitRow == -1 && hitCol == -1) {
+                        hitRow = blockRow + dRow;
+                        hitCol = blockCol + dCol;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        if (hitRow == -1 && hitCol == -1) {
+            return false;
+        }
+
+        fill(c, hitRow, hitCol);
+        return true;
     }
 }

@@ -1,0 +1,13 @@
+123456789 // The possible value characters.
+.	  // The 'blank' character.
+3,3       // the horizontal and vertical dividers
+
+..1.6.9..
+...5.7...
+5..9.4..2
+65.....19
+.........
+17.....34
+3..6.2..8
+...8.1...
+..2.9.6..
