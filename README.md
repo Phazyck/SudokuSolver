@@ -9,4 +9,7 @@ I might try out other sudokus I come across.
 All tried sudokus will be divided into the folders *solved* and *not-solved*, to indicate whether the application is able to solve them or not.
 
 Next up, I'm thinking about implementing some slightly more complex methods that use spot patterns in candidate values, in order to exclude other candidate values.
-I might also have to revise the underlying data structures in order to do that.
+I might also:
+ * have to revise the underlying data structures in order to do that.
+ * revise the format of the input/output files.
+ * make further changes to the data structure to support other kinds of sudokus than the standard 9x9.
